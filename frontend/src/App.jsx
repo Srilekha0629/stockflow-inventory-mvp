@@ -152,7 +152,9 @@ export default function App() {
                     {health?.database?.status === 'connected' ? 'Connected' : 'Connection Standby'}
                   </div>
                   <div className="text-xs text-slate-500 mt-1 truncate" title={health?.database?.details}>
-                    {health?.database?.details || 'Database configuration verified'}
+                    {health?.database?.tables && health.database.tables.length > 0
+                      ? `Tables: ${health.database.tables.join(', ')}`
+                      : health?.database?.details || 'Database configuration verified'}
                   </div>
                 </div>
 

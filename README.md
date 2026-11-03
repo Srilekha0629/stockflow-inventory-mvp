@@ -92,7 +92,7 @@ Follow these steps to initialize and run both the frontend and backend applicati
      cp .env.example .env
      ```
 
-4. Configure your `.env` variables if needed:
+4. Configure your `.env` variables with your MySQL credentials:
    ```env
    PORT=5000
    NODE_ENV=development
@@ -107,9 +107,14 @@ Follow these steps to initialize and run both the frontend and backend applicati
    JWT_SECRET=your_jwt_secret_key_change_in_production
    JWT_EXPIRES_IN=24h
    ```
-   *(Note: The server will start and the `/api/health` check will respond even if MySQL is not currently running, displaying a standby warning.)*
 
-5. Start the backend development server:
+5. Initialize the MySQL database and tables:
+   ```bash
+   npm run db:init
+   ```
+   *(This connects to MySQL, creates `stockflow_db` if not present, and applies `src/config/schema.sql` to generate `organizations`, `users`, and `products` tables.)*
+
+6. Start the backend development server:
    ```bash
    npm run dev
    ```

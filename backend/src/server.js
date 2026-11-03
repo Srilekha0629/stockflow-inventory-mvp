@@ -16,10 +16,19 @@ const server = app.listen(PORT, async () => {
   // Asynchronously test DB connection on startup without crashing the server
   const dbStatus = await checkDbConnection();
   if (dbStatus.connected) {
-    console.log(`✅ [Database] ${dbStatus.message}`);
+    const tableInfo = dbStatus.tables.length > 0
+      ? `Tables: ${dbStatus.tables.join(', ')}`
+      : 'No tables found (run npm run db:init)';
+    console.log(`✅ [Database] ${dbStatus.message} (${tableInfo})`);
   } else {
     console.log(`⚠️  [Database] ${dbStatus.message}`);
-    console.log('ℹ️  Ensure MySQL is running and your .env credentials are correct.');
+    if (dbStatus.code === 'ER_ACCESS_DENIED_ERROR') {
+      console.log('👉 Action needed: Set your MySQL root password in backend/.env under DB_PASSWORD.');
+    } else if (dbStatus.code === 'ER_BAD_DB_ERROR') {
+      console.log("👉 Action needed: Run 'npm run db:init' to create 'stockflow_db' and required tables.");
+    } else if (dbStatus.code === 'ECONNREFUSED') {
+      console.log('👉 Action needed: Start your local MySQL service in Windows Services or via Command Prompt.');
+    }
   }
 });
 
