@@ -18,7 +18,17 @@ export async function initializeDatabase() {
   const user = process.env.DB_USER || 'root';
   const password = process.env.DB_PASSWORD ?? '';
   const database = process.env.DB_NAME || 'stockflow_db';
-
+  const sslConfig = process.env.DB_SSL === 'true'
+  ? {
+      ssl: {
+        ca: fs.readFileSync(
+          path.join(__dirname, '../../certs/ca.pem'),
+          'utf8'
+        ),
+        rejectUnauthorized: true,
+      },
+    }
+  : {};
   console.log('----------------------------------------------------');
   console.log(`Connecting to MySQL server at ${host}:${port} as '${user}'...`);
 
@@ -30,6 +40,7 @@ export async function initializeDatabase() {
       port,
       user,
       password,
+      ...sslConfig,
     });
   } catch (err) {
     console.error('\n❌ MySQL Connection Failed:');
@@ -62,6 +73,7 @@ export async function initializeDatabase() {
       password,
       database,
       multipleStatements: true,
+      ...sslConfig,
     });
 
     console.log(`Applying schema to database '${database}'...`);

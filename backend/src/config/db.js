@@ -1,7 +1,10 @@
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
+import { readFileSync } from 'node:fs';
 
 dotenv.config();
+
+const useSSL = process.env.DB_SSL === 'true';
 
 const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
@@ -14,24 +17,22 @@ const dbConfig = {
   queueLimit: 0,
   enableKeepAlive: true,
   keepAliveInitialDelay: 10000,
+  ...(useSSL && {
+    ssl: {
+      ca: readFileSync(new URL('../../certs/ca.pem', import.meta.url), 'utf8'),
+      rejectUnauthorized: true,
+    },
+  }),
 };
 
-// Create a connection pool for efficient multi-tenant query execution
 export const pool = mysql.createPool(dbConfig);
 
-/**
- * Checks the database connection status by executing a ping and query.
- * Returns an object with connection state, message, and existing tables.
- */
 export const checkDbConnection = async () => {
   let connection;
   try {
     connection = await pool.getConnection();
-    // Test connectivity
     await connection.ping();
     const [result] = await connection.query('SELECT 1 AS alive');
-
-    // Fetch existing tables to verify schema state
     const [tables] = await connection.query('SHOW TABLES');
     const tableList = tables.map((t) => Object.values(t)[0]);
 
@@ -53,11 +54,11 @@ export const checkDbConnection = async () => {
     let userFriendlyMessage = error.message;
 
     if (error.code === 'ER_ACCESS_DENIED_ERROR') {
-      userFriendlyMessage = `Access denied for user '${dbConfig.user}'. Please configure the correct DB_PASSWORD in backend/.env.`;
+      userFriendlyMessage = `Access denied for user '${dbConfig.user}'. Please configure the correct DB_PASSWORD.`;
     } else if (error.code === 'ER_BAD_DB_ERROR') {
       userFriendlyMessage = `Database '${dbConfig.database}' does not exist. Run 'npm run db:init' to create it.`;
     } else if (error.code === 'ECONNREFUSED') {
-      userFriendlyMessage = `Could not connect to MySQL at ${dbConfig.host}:${dbConfig.port}. Please ensure MySQL service is running.`;
+      userFriendlyMessage = `Could not connect to MySQL at ${dbConfig.host}:${dbConfig.port}.`;
     }
 
     return {
@@ -70,9 +71,6 @@ export const checkDbConnection = async () => {
   }
 };
 
-/**
- * Helper to execute prepared SQL queries with parameter binding.
- */
 export const query = (sql, params = []) => pool.execute(sql, params);
 
 export default pool;
