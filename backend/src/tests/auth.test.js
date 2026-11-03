@@ -29,7 +29,7 @@ async function closeServer() {
 
 async function runTests() {
   console.log('====================================================');
-  console.log('🧪 Running Milestone 2 Signup & Organization Tests');
+  console.log('🧪 Running StockFlow Authentication Test Suite');
   console.log('====================================================\n');
 
   let passed = 0;
@@ -57,6 +57,13 @@ async function runTests() {
   await setupServer();
   console.log(`✅ Test server listening on ${baseUrl}\n`);
 
+  let createdOrgId;
+  let createdUserId;
+  const uniqueTimestamp = Date.now();
+  const testEmail = `founder_${uniqueTimestamp}@stockflow.dev`;
+  const rawPassword = 'StrongPassword2026!';
+  const testOrgName = `Logistics Co ${uniqueTimestamp}`;
+
   try {
     // ---------------------------------------------------------------------------
     // Test 1: Health endpoint check
@@ -69,9 +76,9 @@ async function runTests() {
     assert(healthJson.database.status === 'connected', 'Database status reports "connected"');
 
     // ---------------------------------------------------------------------------
-    // Test 2: Input Validation Tests
+    // Test 2: Signup Input Validation Tests
     // ---------------------------------------------------------------------------
-    console.log('\n2. Testing Validation (Missing and Invalid Fields) ...');
+    console.log('\n2. Testing Signup Validation (Missing and Invalid Fields) ...');
 
     // Missing all fields
     const resEmpty = await fetch(`${baseUrl}/api/auth/signup`, {
@@ -79,7 +86,7 @@ async function runTests() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({}),
     });
-    assert(resEmpty.status === 400, 'Empty body returns HTTP 400');
+    assert(resEmpty.status === 400, 'Empty signup body returns HTTP 400');
 
     // Missing password
     const resNoPass = await fetch(`${baseUrl}/api/auth/signup`, {
@@ -136,11 +143,6 @@ async function runTests() {
     // Test 3: Successful Signup (Organization + User + JWT)
     // ---------------------------------------------------------------------------
     console.log('\n3. Testing Successful Signup ...');
-    const uniqueTimestamp = Date.now();
-    const testEmail = `founder_${uniqueTimestamp}@stockflow.dev`;
-    const rawPassword = 'StrongPassword2026!';
-    const testOrgName = `Logistics Co ${uniqueTimestamp}`;
-
     const signupRes = await fetch(`${baseUrl}/api/auth/signup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -163,13 +165,13 @@ async function runTests() {
     assert(signupJson.data.user.password_hash === undefined, 'Password hash is NEVER returned in response');
 
     // Verify JWT payload
-    const decoded = jwt.decode(signupJson.data.token);
-    assert(decoded.userId === signupJson.data.user.id, 'JWT payload contains correct userId');
-    assert(decoded.organizationId === signupJson.data.user.organizationId, 'JWT payload contains correct organizationId');
-    assert(decoded.email === testEmail.toLowerCase(), 'JWT payload contains normalized email');
+    const decodedSignupJwt = jwt.decode(signupJson.data.token);
+    assert(decodedSignupJwt.userId === signupJson.data.user.id, 'JWT payload contains correct userId');
+    assert(decodedSignupJwt.organizationId === signupJson.data.user.organizationId, 'JWT payload contains correct organizationId');
+    assert(decodedSignupJwt.email === testEmail.toLowerCase(), 'JWT payload contains normalized email');
 
-    const createdUserId = signupJson.data.user.id;
-    const createdOrgId = signupJson.data.user.organizationId;
+    createdUserId = signupJson.data.user.id;
+    createdOrgId = signupJson.data.user.organizationId;
 
     // ---------------------------------------------------------------------------
     // Test 4: Database Persistence Verification
@@ -203,7 +205,7 @@ async function runTests() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: 'Another Person',
-        email: testEmail.toUpperCase(), // Test case insensitivity
+        email: testEmail.toUpperCase(),
         password: 'AnotherPassword123!',
         organizationName: 'Another Org',
       }),
@@ -220,21 +222,17 @@ async function runTests() {
     const [orgsBefore] = await pool.execute('SELECT COUNT(*) as count FROM organizations');
     const orgCountBefore = orgsBefore[0].count;
 
-    // Simulate an atomic transaction failure:
-    // Create an organization, then fail user insert by violating duplicate email constraint
     const conn = await pool.getConnection();
     let rollbackTriggered = false;
 
     try {
       await conn.beginTransaction();
 
-      // 1. Insert an organization inside the transaction
       const [ghostOrg] = await conn.execute(
         'INSERT INTO organizations (name) VALUES (?)',
         ['Ghost Org Should Be Rolled Back']
       );
 
-      // 2. Deliberately attempt to insert a user with duplicate email to trigger failure
       await conn.execute(
         'INSERT INTO users (organization_id, name, email, password) VALUES (?, ?, ?, ?)',
         [ghostOrg.insertId, 'Ghost User', testEmail, 'hashedPassword']
@@ -257,9 +255,119 @@ async function runTests() {
       'Organization count unchanged: Ghost organization was rolled back cleanly'
     );
 
+    // ---------------------------------------------------------------------------
+    // Test 8: Login Input Validation Tests
+    // ---------------------------------------------------------------------------
+    console.log('\n8. Testing Login Input Validation ...');
+
+    // Missing email and password
+    const loginEmptyRes = await fetch(`${baseUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    assert(loginEmptyRes.status === 400, 'Empty login body returns HTTP 400');
+
+    // Missing password
+    const loginNoPassRes = await fetch(`${baseUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: testEmail }),
+    });
+    assert(loginNoPassRes.status === 400, 'Missing login password returns HTTP 400');
+
+    // Missing email
+    const loginNoEmailRes = await fetch(`${baseUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: rawPassword }),
+    });
+    assert(loginNoEmailRes.status === 400, 'Missing login email returns HTTP 400');
+
+    // ---------------------------------------------------------------------------
+    // Test 9: Login with Non-Existent Email
+    // ---------------------------------------------------------------------------
+    console.log('\n9. Testing Login with Non-Existent Email ...');
+    const loginWrongEmailRes = await fetch(`${baseUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: 'does_not_exist_99999@stockflow.dev',
+        password: rawPassword,
+      }),
+    });
+    const loginWrongEmailJson = await loginWrongEmailRes.json();
+    assert(loginWrongEmailRes.status === 401, 'Non-existent email returns HTTP 401 Unauthorized');
+    assert(loginWrongEmailJson.success === false, 'Response contains success: false');
+    assert(loginWrongEmailJson.message === 'Invalid email or password.', 'Error message is generic to prevent enumeration');
+
+    // ---------------------------------------------------------------------------
+    // Test 10: Login with Incorrect Password
+    // ---------------------------------------------------------------------------
+    console.log('\n10. Testing Login with Incorrect Password ...');
+    const loginWrongPassRes = await fetch(`${baseUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: testEmail,
+        password: 'IncorrectPassword999!',
+      }),
+    });
+    const loginWrongPassJson = await loginWrongPassRes.json();
+    assert(loginWrongPassRes.status === 401, 'Incorrect password returns HTTP 401 Unauthorized');
+    assert(loginWrongPassJson.success === false, 'Response contains success: false');
+    assert(loginWrongPassJson.message === 'Invalid email or password.', 'Error message is generic');
+
+    // ---------------------------------------------------------------------------
+    // Test 11: Successful Login
+    // ---------------------------------------------------------------------------
+    console.log('\n11. Testing Successful Login ...');
+    const loginSuccessRes = await fetch(`${baseUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: testEmail,
+        password: rawPassword,
+      }),
+    });
+    const loginSuccessJson = await loginSuccessRes.json();
+    assert(loginSuccessRes.status === 200, 'Correct credentials return HTTP 200 OK');
+    assert(loginSuccessJson.success === true, 'Response contains success: true');
+    assert(typeof loginSuccessJson.data.token === 'string', 'Response contains JWT token string');
+    assert(loginSuccessJson.data.user.id === createdUserId, 'User id matches created user');
+    assert(loginSuccessJson.data.user.email === testEmail.toLowerCase(), 'Email matches normalized email');
+    assert(loginSuccessJson.data.user.organizationId === createdOrgId, 'Organization ID matches created organization');
+    assert(loginSuccessJson.data.user.organizationName === testOrgName, 'Organization name matches created organization');
+    assert(loginSuccessJson.data.user.password === undefined, 'Password is NEVER exposed in login response');
+    assert(loginSuccessJson.data.user.password_hash === undefined, 'Password hash is NEVER exposed');
+
+    // Verify JWT payload from login
+    const decodedLoginJwt = jwt.decode(loginSuccessJson.data.token);
+    assert(decodedLoginJwt.userId === createdUserId, 'Login JWT contains correct userId');
+    assert(decodedLoginJwt.organizationId === createdOrgId, 'Login JWT contains correct organizationId');
+    assert(decodedLoginJwt.email === testEmail.toLowerCase(), 'Login JWT contains correct email');
+
+    // ---------------------------------------------------------------------------
+    // Test 12: Case-Insensitive Email Login
+    // ---------------------------------------------------------------------------
+    console.log('\n12. Testing Case-Insensitive Email Login ...');
+    const loginCaseRes = await fetch(`${baseUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: `   ${testEmail.toUpperCase()}   `,
+        password: rawPassword,
+      }),
+    });
+    assert(loginCaseRes.status === 200, 'Uppercase trimmed email logs in successfully');
+
+    // ---------------------------------------------------------------------------
     // Clean up test records
-    await pool.execute('DELETE FROM organizations WHERE id = ?', [createdOrgId]);
-    console.log('\n🧹 Test records cleaned up.');
+    // ---------------------------------------------------------------------------
+    if (createdOrgId) {
+      await pool.execute('DELETE FROM organizations WHERE id = ?', [createdOrgId]);
+      console.log('\n🧹 Test records cleaned up.');
+    }
   } finally {
     await closeServer();
     await pool.end();

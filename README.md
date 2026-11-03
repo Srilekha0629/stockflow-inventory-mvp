@@ -214,6 +214,7 @@ Follow these steps to initialize and run both the frontend and backend applicati
 | `GET` | `/` | API Information & Service Overview | No |
 | `GET` | `/api/health` | Service and Database Connectivity Status | No |
 | `POST` | `/api/auth/signup` | Register new organization & primary user (atomic transaction) | No |
+| `POST` | `/api/auth/login` | Authenticate user and return session JWT with tenant scope | No |
 
 ---
 

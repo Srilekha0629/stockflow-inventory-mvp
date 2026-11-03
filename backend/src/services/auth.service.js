@@ -108,3 +108,71 @@ export async function registerUserAndOrganization({
     connection.release();
   }
 }
+
+/**
+ * Authenticates a user by email and password without modifying or creating organizations.
+ *
+ * @param {Object} params
+ * @param {string} params.email - User's email address
+ * @param {string} params.password - Plaintext password to verify
+ * @returns {Promise<Object>} Safe user details and generated JWT token
+ */
+export async function loginUser({ email, password }) {
+  const normalizedEmail = email.trim().toLowerCase();
+
+  // 1. Fetch user joined with organization details
+  const [users] = await pool.execute(
+    `SELECT u.id, u.organization_id, u.name, u.email, u.password, o.name AS organization_name
+     FROM users u
+     JOIN organizations o ON u.organization_id = o.id
+     WHERE u.email = ?`,
+    [normalizedEmail]
+  );
+
+  // 2. Reject if email does not exist
+  if (users.length === 0) {
+    const error = new Error('Invalid email or password.');
+    error.status = 401;
+    throw error;
+  }
+
+  const user = users[0];
+
+  // 3. Compare password with stored bcrypt hash
+  const isPasswordValid = await bcrypt.compare(password, user.password);
+  if (!isPasswordValid) {
+    const error = new Error('Invalid email or password.');
+    error.status = 401;
+    throw error;
+  }
+
+  // 4. Generate JWT containing userId, organizationId, and email
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret) {
+    console.warn('⚠️  JWT_SECRET is not set in environment variables! Using fallback development secret.');
+  }
+
+  const token = jwt.sign(
+    {
+      userId: user.id,
+      organizationId: user.organization_id,
+      email: user.email,
+    },
+    jwtSecret || 'stockflow_dev_secret_key_2026',
+    {
+      expiresIn: process.env.JWT_EXPIRES_IN || '24h',
+    }
+  );
+
+  // 5. Return safe user & organization details (password is omitted)
+  return {
+    token,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      organizationId: user.organization_id,
+      organizationName: user.organization_name,
+    },
+  };
+}
