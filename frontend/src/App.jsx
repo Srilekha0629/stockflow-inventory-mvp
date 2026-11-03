@@ -33,7 +33,12 @@ export default function App() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/health');
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+      const healthEndpoint = baseUrl.endsWith('/api')
+        ? `${baseUrl}/health`
+        : `${baseUrl}/api/health`;
+
+      const res = await fetch(healthEndpoint);
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
