@@ -4,7 +4,7 @@ StockFlow is a full-stack, multi-tenant inventory management application that he
 
 The application allows multiple organizations to maintain their own independent inventory data. Each user is associated with an organization, and all product operations are restricted to that organization.
 
-This project was developed as an internship assessment to demonstrate full-stack development, REST API design, database management, authentication, and multi-tenant architecture.
+This project was developed as a full-stack internship assessment to demonstrate REST API development, database management, authentication, and multi-tenant architecture.
 
 **GitHub Repository:** https://github.com/Srilekha0629/stockflow-inventory-mvp
 
@@ -118,29 +118,29 @@ StockFlow follows a frontend-backend-database architecture.
               User
                |
                v
-       React Frontend
-        (Vite + Tailwind)
+        React Frontend
+       (Vite + Tailwind)
                |
                | HTTP Requests
                | JWT Authentication
                v
-       Express Backend
+        Express Backend
                |
-       +-------+--------+
-       |       |        |
-       v       v        v
-   Auth API  Product  Dashboard
-             API       API
-       |       |        |
-       +-------+--------+
-               |
-               v
+        +------+--------+
+        |       |       |
+        v       v       v
+     Auth API Product Dashboard
+              API      API
+        |       |       |
+        +-------+-------+
+                |
+                v
           MySQL Database
-               |
-       +-------+--------+
-       |       |        |
-       v       v        v
- Organizations Users  Products
+                |
+        +-------+--------+
+        |       |        |
+        v       v        v
+   Organizations Users  Products
 ```
 
 ### Request Flow
@@ -355,7 +355,11 @@ cd frontend
 npm install
 ```
 
-Configure the frontend environment if required by its API configuration.
+Configure the frontend API URL:
+
+```powershell
+$env:VITE_API_BASE_URL="http://localhost:5000/api"
+```
 
 Start the development server:
 
@@ -456,6 +460,7 @@ npm test
 ```
 
 Covers:
+
 - User registration.
 - Password hashing.
 - Duplicate email handling.
@@ -470,6 +475,7 @@ npm run test:products
 ```
 
 Covers:
+
 - Product creation and retrieval.
 - Product updates and deletion.
 - Product validation.
@@ -488,7 +494,7 @@ The complete backend test suite was verified with:
 
 - Authentication tests: 53 passed.
 - Product and multi-tenant tests: 30 passed.
-- Total: 83 tests passed.
+- **Total: 83 tests passed.**
 
 ## 11. Security Implementation
 
@@ -533,6 +539,12 @@ Developed as a full-stack internship assessment project.
 **Project:** StockFlow – Multi-Tenant Inventory Management MVP
 
 **Repository:** https://github.com/Srilekha0629/stockflow-inventory-mvp
+
+**Live Application:** https://stockflow-inventory-mvp-1-6kl7.onrender.com
+
+**Backend API Health:** https://stockflow-inventory-mvp-229y.onrender.com/api/health
+
+**Deployment Platform:** Render
 
 ---
 
