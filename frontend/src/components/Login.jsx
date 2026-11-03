@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export default function Login({ onNavigateToSignup, onNavigateToHealth }) {
+export default function Login({ onNavigateToSignup, onNavigateToHealth, onLoginSuccess }) {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -122,6 +122,9 @@ export default function Login({ onNavigateToSignup, onNavigateToHealth }) {
       }
 
       setLoggedInUser(data.data.user);
+      if (onLoginSuccess) {
+        onLoginSuccess(data.data.user);
+      }
     } catch (err) {
       console.error('Login error:', err);
       setServerError(

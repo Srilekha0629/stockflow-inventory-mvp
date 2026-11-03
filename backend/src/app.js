@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import healthRoutes from './routes/health.routes.js';
 import authRoutes from './routes/auth.routes.js';
+import productRoutes from './routes/product.routes.js';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware.js';
 
 dotenv.config();
@@ -35,6 +36,8 @@ app.get('/', (req, res) => {
 // API Routes
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/dashboard', productRoutes); // Supports /api/dashboard/summary
 
 // Error Handlers
 app.use(notFoundHandler);

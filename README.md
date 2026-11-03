@@ -215,6 +215,12 @@ Follow these steps to initialize and run both the frontend and backend applicati
 | `GET` | `/api/health` | Service and Database Connectivity Status | No |
 | `POST` | `/api/auth/signup` | Register new organization & primary user (atomic transaction) | No |
 | `POST` | `/api/auth/login` | Authenticate user and return session JWT with tenant scope | No |
+| `GET` | `/api/products` | List all products belonging to authenticated tenant | Yes (Bearer JWT) |
+| `POST` | `/api/products` | Create a product scoped to tenant organization | Yes (Bearer JWT) |
+| `GET` | `/api/products/:id` | Retrieve single product by ID (tenant-scoped) | Yes (Bearer JWT) |
+| `PUT` | `/api/products/:id` | Update product details (tenant-scoped) | Yes (Bearer JWT) |
+| `DELETE` | `/api/products/:id` | Delete product (tenant-scoped) | Yes (Bearer JWT) |
+| `GET` | `/api/products/summary` | Real dashboard totals & low-stock alerts (tenant-scoped) | Yes (Bearer JWT) |
 
 ---
 

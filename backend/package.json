@@ -9,7 +9,9 @@
     "dev": "nodemon src/server.js",
     "db:init": "node src/config/initDb.js",
     "test": "node src/tests/auth.test.js",
-    "test:auth": "node src/tests/auth.test.js"
+    "test:auth": "node src/tests/auth.test.js",
+    "test:products": "node src/tests/products.test.js",
+    "test:all": "node src/tests/auth.test.js && node src/tests/products.test.js"
   },
   "keywords": [
     "inventory",

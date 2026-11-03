@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export default function Signup({ onNavigateToHealth, onNavigateToLogin }) {
+export default function Signup({ onNavigateToHealth, onNavigateToLogin, onNavigateToDashboard }) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -235,28 +235,28 @@ export default function Signup({ onNavigateToHealth, onNavigateToLogin }) {
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 pt-2">
+            {onNavigateToDashboard && (
+              <button
+                onClick={() => onNavigateToDashboard(successData.user)}
+                className="flex-1 py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm text-center cursor-pointer"
+              >
+                Go to Dashboard &rarr;
+              </button>
+            )}
             {onNavigateToLogin ? (
               <button
                 onClick={onNavigateToLogin}
-                className="flex-1 py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm text-center cursor-pointer"
+                className="py-2.5 px-4 border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg text-sm font-medium transition-colors shadow-sm text-center cursor-pointer"
               >
                 Go to Login
               </button>
             ) : null}
             <button
               onClick={handleReset}
-              className="flex-1 py-2.5 px-4 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 transition-colors shadow-sm text-center cursor-pointer"
+              className="py-2.5 px-4 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 transition-colors shadow-sm text-center cursor-pointer"
             >
-              Register Another Organization
+              Register Another
             </button>
-            {onNavigateToHealth && (
-              <button
-                onClick={onNavigateToHealth}
-                className="py-2.5 px-4 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 transition-colors shadow-sm text-center cursor-pointer"
-              >
-                Inspect Health
-              </button>
-            )}
           </div>
         </div>
       </div>
